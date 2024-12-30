@@ -1,0 +1,79 @@
+##views
+----------------------------------***********************----------------------------------
+
+from django.shortcuts import render
+from . models import *
+from . serializers import *
+from rest_framework import generics, status
+from rest_framework.response import Response
+# from rest_framework.decorators import api_view
+
+# Create your views here.
+class ClientListCreate(generics.ListCreateAPIView):
+    queryset = Client.objects.all()
+    serializer_class = ClientSerializer
+
+class ClientRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Client.objects.all()
+    serializer_class = ClientSerializer
+
+class LoanListCreate(generics.ListCreateAPIView):
+    queryset = Loan.objects.all()
+    serializer_class = LoanSerializer
+
+    def perform_create(self, serializer):
+        client_id = self.request.data.get('client')
+        client = Client.objects.get(id=client_id)
+        serializer.save(client=client)
+
+class LoanRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Loan.objects.all()
+    serializer_class = LoanSerializer
+
+class ClientLoans(generics.ListAPIView):
+    serializer_class = ClientWithLoanSerializer
+
+    def get_queryset(self):
+        client_id = self.kwargs.get('client_id')
+        if client_id:
+            return Client.objects.filter(id=client_id)
+        return Client.objects.all()
+
+class GuarantorListCreate(generics.ListCreateAPIView):
+    queryset = Guarantor.objects.all()
+    serializer_class = GuarantorSerializer
+
+    def perform_create(self, serializer):
+        loan_id = self.request.data.get('loan')
+        loan = Loan.objects.get(id=loan_id)
+        serializer.save(loan=loan)
+
+class GuarantorDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Guarantor.objects.all()
+    serializer_class = GuarantorSerializer
+
+
+
+
+
+
+
+---------------------------------------*************************-------------------------------------
+##urls
+
+
+
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('Client/', views.ClientListCreate.as_view(), name='Client'),
+    path('Client/<int:pk>/', views.ClientRetrieveUpdateDestroy.as_view(), name='ClientUpdate'),
+    path('Loans/', views.LoanListCreate.as_view(), name='loan-list-create'),
+    path('Loans/<int:pk>/', views.LoanRetrieveUpdateDestroy.as_view(), name='loan-detail'),
+    path('client-loans/', views.ClientLoans.as_view(), name='client-loans'),
+    path('client-loans/<int:client_id>/', views.ClientLoans.as_view(), name='client-loans'),
+    path('Guarantors/', views.GuarantorListCreate.as_view(), name='guarantor-list-create'),
+    path('Guarantors/<int:pk>/', views.GuarantorDetail.as_view(), name='guarantor-detail'),
+]
